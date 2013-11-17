@@ -1,0 +1,130 @@
+<html>
+<head>
+<title>Do sentiment analysis on the text</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+<style type="text/css">
+body {
+	padding-top: 60px;
+	padding-bottom: 60px;
+}
+</style>
+</head>
+<body>
+
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse"
+					data-target=".navbar-collapse">
+					<span class="icon-bar"></span> <span class="icon-bar"></span> <span
+						class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#">Run Sentiment Analysis</a>
+			</div>
+
+		</div>
+	</div>
+
+	<div class="container">
+		<div class="row">
+			<div class="col-md-6">
+				<textarea class="form-control" rows="3"
+					placeholder="Twitter Search Keywords or simple text" id="text"
+					name="text"></textarea>
+				
+				<input type="checkbox" id="twitterSearchEnabled" name="twitterSearchEnabled">Twitter Search 
+				<input type="submit" value="Run Sentiment Analysis" id="submit"
+					class="btn btn-success">
+			</div>
+		</div>
+		<div id="loading" style="display: none;" class="container">
+			<img src="images/loader.gif" alt="Please wait.." />
+		</div>
+
+		<div id="result" class="row"></div>
+
+	</div>
+
+	<script type="text/template" id="searchResult">
+	<div class="col-md-{{divSize}}" id="{{keyword}}">
+		<h2>{{keyword}} <small>Sentiment Analysis</small></h2>
+		<ul class="unstyled">
+			{{#sentiments}}
+				<div class="{{cssClass}}">
+					{{line}}
+				</div>
+			{{/sentiments}}
+		</ul>
+	</div>
+</script>
+
+
+	<script type="text/template" id="textResult">
+	<div class="col-md-12">
+				<div class="{{cssClass}}">
+					{{line}}
+				</div>
+	</div>
+</script>
+
+
+	<script type="text/javascript" src="js/jquery.js"></script>
+	<script type="text/javascript"
+		src="//cdnjs.cloudflare.com/ajax/libs/mustache.js/0.7.2/mustache.min.js"></script>
+	<script type="text/javascript">
+		$("#submit")
+				.on(
+						"click",
+						function(event) {
+							$("#result").empty();
+							event.preventDefault();
+							$('#loading').show();
+							var twitterSearchEnabled = $('#twitterSearchEnabled').is(":checked") ? true : false;
+							var text = $("textarea#text").val();
+							if (text && twitterSearchEnabled) {
+								var searchKeywords = text;
+								$.get('/api/v1/sentiments?searchKeywords='+ searchKeywords,
+										function(result) {
+													$('#loading').hide();
+													console.log('result : '
+															+ result);
+													var numberOfSearchKeywords = result.length;
+													var divSize = 12 / numberOfSearchKeywords;
+													for ( var i = 0; i < numberOfSearchKeywords; i++) {
+														var searchResultForKeyword = result[i];
+														var keyword = searchResultForKeyword.keyword;
+														var tweetsWithSentiments = searchResultForKeyword.sentiments;
+														var data = {
+															divSize : divSize,
+															keyword : keyword,
+															sentiments : tweetsWithSentiments
+														};
+														var template = $('#searchResult').html();
+														var html = Mustache.to_html(template, data);
+														$('#result').append(html);
+													}
+												});
+
+							}else if(text && !twitterSearchEnabled){
+								$.get('/api/v1/sentiments/text?text='+ text,
+										function(result) {
+													$('#loading').hide();
+													console.log('result : ' + result);
+													var data = {
+														cssClass : result.cssClass,
+														line : result.line
+													};
+													var template = $('#textResult').html();
+													var html = Mustache.to_html(template, data);
+													$('#result').append(html);
+										});
+							}else{
+								alert("Please enter text in textarea")
+							}
+							
+
+						});
+	</script>
+</body>
+</html>
